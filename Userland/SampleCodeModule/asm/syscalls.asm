@@ -15,6 +15,8 @@ GLOBAL sys_sem_open
 GLOBAL sys_sem_wait
 GLOBAL sys_sem_post
 GLOBAL sys_sem_close
+GLOBAL sys_pipe_create
+GLOBAL sys_pipe_close
 GLOBAL sys_list_processes
 GLOBAL sys_mem_info
 GLOBAL sys_sleep
@@ -122,6 +124,18 @@ sys_sem_post:
 ; int64_t sys_sem_close(const char *name)
 sys_sem_close:
     mov rax, 16
+    int 80h
+    ret
+
+; int64_t sys_pipe_create(int fds[2])
+sys_pipe_create:
+    mov rax, 17
+    int 80h
+    ret
+
+; int64_t sys_pipe_close(int64_t fd)
+sys_pipe_close:
+    mov rax, 18
     int 80h
     ret
 

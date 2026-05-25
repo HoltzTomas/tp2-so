@@ -18,6 +18,7 @@
 
 #define STDIN 0
 #define STDOUT 1
+#define PIPE_FD_BASE 100
 
 typedef int16_t pid_t;
 typedef int16_t fd_t;
