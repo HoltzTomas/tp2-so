@@ -3,6 +3,7 @@
 #include "video.h"
 #include "memoryManager.h"
 #include "process.h"
+#include "semaphore.h"
 #include "interrupts.h"
 #include "defs.h"
 #include "lib.h"
@@ -20,6 +21,10 @@
 #define SYS_YIELD 10
 #define SYS_WAIT 11
 #define SYS_NICE 12
+#define SYS_SEM_OPEN 13
+#define SYS_SEM_WAIT 14
+#define SYS_SEM_POST 15
+#define SYS_SEM_CLOSE 16
 #define SYS_LIST_PROCESSES 20
 #define SYS_MEM_INFO 21
 #define SYS_SLEEP 22
@@ -110,6 +115,18 @@ uint64_t syscall_dispatcher(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     }
     case SYS_NICE: {
         return (uint64_t)process_nice((pid_t)arg0, (uint8_t)arg1);
+    }
+    case SYS_SEM_OPEN: {
+        return (uint64_t)sem_open((const char *)arg0, arg1);
+    }
+    case SYS_SEM_WAIT: {
+        return (uint64_t)sem_wait((const char *)arg0);
+    }
+    case SYS_SEM_POST: {
+        return (uint64_t)sem_post((const char *)arg0);
+    }
+    case SYS_SEM_CLOSE: {
+        return (uint64_t)sem_close((const char *)arg0);
     }
     case SYS_LIST_PROCESSES: {
         return (uint64_t)process_list((ProcessInfo *)arg0, (int)arg1);
