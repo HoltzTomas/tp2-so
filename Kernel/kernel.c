@@ -7,6 +7,7 @@
 #include "video.h"
 #include "memoryManager.h"
 #include "process.h"
+#include "semaphore.h"
 #include "defs.h"
 
 extern uint8_t text;
@@ -103,6 +104,10 @@ int main(void) {
     ncPrint("[Initializing video]");
     ncNewline();
     video_init();
+
+    ncPrint("[Initializing semaphores]");
+    ncNewline();
+    sem_init_system();
 
     ncPrint("[Initializing processes]");
     ncNewline();

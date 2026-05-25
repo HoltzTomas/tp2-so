@@ -11,6 +11,10 @@ GLOBAL sys_unblock
 GLOBAL sys_yield
 GLOBAL sys_wait
 GLOBAL sys_nice
+GLOBAL sys_sem_open
+GLOBAL sys_sem_wait
+GLOBAL sys_sem_post
+GLOBAL sys_sem_close
 GLOBAL sys_list_processes
 GLOBAL sys_mem_info
 GLOBAL sys_sleep
@@ -94,6 +98,30 @@ sys_wait:
 ; int64_t sys_nice(int64_t pid, int64_t priority)
 sys_nice:
     mov rax, 12
+    int 80h
+    ret
+
+; int64_t sys_sem_open(const char *name, uint64_t initialValue)
+sys_sem_open:
+    mov rax, 13
+    int 80h
+    ret
+
+; int64_t sys_sem_wait(const char *name)
+sys_sem_wait:
+    mov rax, 14
+    int 80h
+    ret
+
+; int64_t sys_sem_post(const char *name)
+sys_sem_post:
+    mov rax, 15
+    int 80h
+    ret
+
+; int64_t sys_sem_close(const char *name)
+sys_sem_close:
+    mov rax, 16
     int 80h
     ret
 
