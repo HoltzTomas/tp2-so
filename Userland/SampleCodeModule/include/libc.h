@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
+
 void putchar(char c);
 void printf(const char *fmt, ...);
 int gets(char *buf, int max_len);
