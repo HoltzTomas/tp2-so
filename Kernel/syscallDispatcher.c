@@ -4,6 +4,7 @@
 #include "memoryManager.h"
 #include "process.h"
 #include "semaphore.h"
+#include "pipe.h"
 #include "interrupts.h"
 #include "defs.h"
 #include "lib.h"
@@ -25,6 +26,8 @@
 #define SYS_SEM_WAIT 14
 #define SYS_SEM_POST 15
 #define SYS_SEM_CLOSE 16
+#define SYS_PIPE_CREATE 17
+#define SYS_PIPE_CLOSE 18
 #define SYS_LIST_PROCESSES 20
 #define SYS_MEM_INFO 21
 #define SYS_SLEEP 22
@@ -46,25 +49,33 @@ uint64_t syscall_dispatcher(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
     switch (syscall_nr) {
     case SYS_READ: {
-        if ((int64_t)arg0 == STDIN) {
-            char *buf = (char *)arg1;
-            uint64_t count = arg2;
+        int fd = (int)arg0;
+        char *buf = (char *)arg1;
+        uint64_t count = arg2;
+        if (fd == STDIN) {
             uint64_t i;
             for (i = 0; i < count; i++) {
                 buf[i] = keyboard_get_char();
             }
             return i;
         }
+        if (pipe_is_pipe(fd)) {
+            return (uint64_t)pipe_read(fd, buf, (int)count);
+        }
         return 0;
     }
     case SYS_WRITE: {
-        if ((int64_t)arg0 == STDOUT) {
-            const char *buf = (const char *)arg1;
-            uint64_t count = arg2;
+        int fd = (int)arg0;
+        const char *buf = (const char *)arg1;
+        uint64_t count = arg2;
+        if (fd == STDOUT) {
             for (uint64_t i = 0; i < count; i++) {
                 video_put_char(buf[i]);
             }
             return count;
+        }
+        if (pipe_is_pipe(fd)) {
+            return (uint64_t)pipe_write(fd, buf, (int)count);
         }
         return 0;
     }
@@ -127,6 +138,12 @@ uint64_t syscall_dispatcher(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     }
     case SYS_SEM_CLOSE: {
         return (uint64_t)sem_close((const char *)arg0);
+    }
+    case SYS_PIPE_CREATE: {
+        return (uint64_t)pipe_create((int *)arg0);
+    }
+    case SYS_PIPE_CLOSE: {
+        return (uint64_t)pipe_close((int)arg0);
     }
     case SYS_LIST_PROCESSES: {
         return (uint64_t)process_list((ProcessInfo *)arg0, (int)arg1);

@@ -21,6 +21,8 @@ int64_t sys_sem_open(const char *name, uint64_t initialValue);
 int64_t sys_sem_wait(const char *name);
 int64_t sys_sem_post(const char *name);
 int64_t sys_sem_close(const char *name);
+int64_t sys_pipe_create(int fds[2]);
+int64_t sys_pipe_close(int64_t fd);
 int64_t sys_list_processes(void *buf, int64_t max);
 int64_t sys_mem_info(void *info);
 int64_t sys_sleep(uint64_t ms);
