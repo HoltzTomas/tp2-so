@@ -6,12 +6,13 @@ GLOBAL irq_init
 GLOBAL irq_enable
 GLOBAL irq_disable
 GLOBAL force_timer
+GLOBAL _initialize_stack_frame
 
 GLOBAL _irq00_handler
 GLOBAL _irq01_handler
 GLOBAL _syscall_handler
 
-EXTERN timer_tick
+EXTERN schedule
 EXTERN keyboard_handler
 EXTERN syscall_dispatcher
 
@@ -73,11 +74,13 @@ pic_master_eoi:
     pop rax
     ret
 
-; Timer interrupt handler (IRQ0)
+; Timer interrupt handler (IRQ0) - performs context switch
 _irq00_handler:
     push_state
 
-    call timer_tick
+    mov rdi, rsp          ; Pass current RSP to schedule()
+    call schedule         ; Returns new RSP in RAX
+    mov rsp, rax          ; Switch to new process stack
 
     ; Send EOI
     mov al, 0x20
@@ -105,27 +108,78 @@ _irq01_handler:
 _syscall_handler:
     push_state
 
-    ; Args come in: rdi, rsi, rdx, rcx, r8 and syscall_nr in rax
-    ; We need to call: syscall_dispatcher(arg0, arg1, arg2, arg3, arg4, syscall_nr)
-    ; rdi=arg0 already set
-    ; rsi=arg1 already set
-    ; rdx=arg2 already set
-    ; rcx=arg3 already set (note: syscall clobbers rcx, but INT doesnt)
-    ; r8=arg4 already set
+    ; Args: rdi=arg0, rsi=arg1, rdx=arg2, rcx=arg3, r8=arg4, rax=syscall_nr
     mov r9, rax       ; syscall_nr as 6th arg
 
     call syscall_dispatcher
 
-    ; Store return value - overwrite rax on stack
-    ; rax is first pushed in push_state, so it's at offset 14*8 from current rsp
+    ; Store return value - overwrite rax on stack (rax is at top after push_state = offset 14*8)
     mov [rsp + 14*8], rax
 
     pop_state
     iretq
 
-; Force a timer interrupt
+; Force a timer interrupt (triggers context switch)
 force_timer:
     int 0x20
+    ret
+
+; Initialize a stack frame for a new process
+; void *_initialize_stack_frame(void (*func)(uint64_t, char**), void *args, void *stack_top)
+; rdi = function pointer (entry point)
+; rsi = args (will be passed as argc in rdi when process starts)
+; rdx = stack top
+;
+; Sets up the stack so that when pop_state + iretq executes, it jumps to func
+; with rdi=args (argc), rsi=0 (argv placeholder)
+_initialize_stack_frame:
+    mov rax, rdx          ; rax = stack_top
+
+    ; iretq frame (pushed in reverse order on stack, so SS is at highest addr)
+    sub rax, 8
+    mov qword [rax], 0x0          ; SS
+    sub rax, 8
+    mov [rax], rdx                ; RSP (original stack top)
+    sub rax, 8
+    mov qword [rax], 0x202        ; RFLAGS (IF=1)
+    sub rax, 8
+    mov qword [rax], 0x08         ; CS (kernel code segment)
+    sub rax, 8
+    mov [rax], rdi                ; RIP = function entry point
+
+    ; push_state frame (15 registers): rax,rbx,rcx,rdx,rbp,rdi,rsi,r8-r15
+    sub rax, 8
+    mov qword [rax], 0            ; RAX
+    sub rax, 8
+    mov qword [rax], 0            ; RBX
+    sub rax, 8
+    mov qword [rax], 0            ; RCX
+    sub rax, 8
+    mov qword [rax], 0            ; RDX
+    sub rax, 8
+    mov qword [rax], 0            ; RBP
+    sub rax, 8
+    mov [rax], rsi                ; RDI = args (argc)
+    sub rax, 8
+    mov qword [rax], 0            ; RSI = 0 (argv)
+    sub rax, 8
+    mov qword [rax], 0            ; R8
+    sub rax, 8
+    mov qword [rax], 0            ; R9
+    sub rax, 8
+    mov qword [rax], 0            ; R10
+    sub rax, 8
+    mov qword [rax], 0            ; R11
+    sub rax, 8
+    mov qword [rax], 0            ; R12
+    sub rax, 8
+    mov qword [rax], 0            ; R13
+    sub rax, 8
+    mov qword [rax], 0            ; R14
+    sub rax, 8
+    mov qword [rax], 0            ; R15
+
+    ; RAX now points to the "top" of the initialized stack
     ret
 
 ; PIC initialization

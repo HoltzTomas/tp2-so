@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "video.h"
 #include "memoryManager.h"
+#include "process.h"
 #include "defs.h"
 
 extern uint8_t text;
@@ -81,6 +82,12 @@ void *initializeKernelBinary(void) {
     return getStackBase();
 }
 
+static void userland_entry(uint64_t argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+    ((EntryPoint)sampleCodeModuleAddress)();
+}
+
 int main(void) {
     ncPrint("[Kernel Main]");
     ncNewline();
@@ -97,15 +104,25 @@ int main(void) {
     ncNewline();
     video_init();
 
+    ncPrint("[Initializing processes]");
+    ncNewline();
+    process_init();
+
     ncPrint("[Initializing interrupts]");
     ncNewline();
     irq_init();
     irq_enable();
 
-    ncPrint("[Jumping to userland]");
+    ncPrint("[Creating shell process]");
     ncNewline();
 
-    ((EntryPoint)sampleCodeModuleAddress)();
+    int16_t fds[2] = {STDIN, STDOUT};
+    process_create((ProcessFunc)userland_entry, 0, NULL, "shell", 1, fds);
+
+    /* The kernel main becomes the idle process context - just halt */
+    while (1) {
+        _hlt();
+    }
 
     return 0;
 }
