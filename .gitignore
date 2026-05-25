@@ -1,0 +1,14 @@
+# Object files
+*.o
+
+# Images
+*.img
+*.qcow2
+*.vmdk
+
+# Keep bootloader binaries tracked (override below)
+# Ignore built binaries in Kernel/, Userland/, Image/, Toolchain/
+/Kernel/*.bin
+/Userland/*.bin
+/Image/*.bin
+/Toolchain/ModulePacker/mp.bin
