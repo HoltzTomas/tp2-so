@@ -84,6 +84,44 @@ void *initializeKernelBinary(void) {
     return getStackBase();
 }
 
+static const char *exception_messages[] = {
+    "Division by zero",
+    "Debug",
+    "NMI",
+    "Breakpoint",
+    "Overflow",
+    "Bound Range Exceeded",
+    "Invalid Opcode",
+    "Device Not Available",
+    "Double Fault",
+    "Coprocessor Segment Overrun",
+    "Invalid TSS",
+    "Segment Not Present",
+    "Stack Fault",
+    "General Protection Fault",
+    "Page Fault"
+};
+
+void exception_handler(uint64_t exception_id) {
+    ncPrint("\n*** EXCEPTION: ");
+    if (exception_id < 15)
+        ncPrint((char *)exception_messages[exception_id]);
+    else
+        ncPrint("Unknown");
+    ncPrint(" ***\n");
+    ncPrint("Killing current process...\n");
+
+    int64_t pid = process_getpid();
+    if (pid > 1) {
+        process_kill(pid);
+        force_timer();
+    } else {
+        ncPrint("FATAL: Exception in kernel/shell. Halting.\n");
+        _cli();
+        while (1) _hlt();
+    }
+}
+
 static void userland_entry(uint64_t argc, char *argv[]) {
     (void)argc;
     (void)argv;

@@ -11,10 +11,15 @@ GLOBAL _initialize_stack_frame
 GLOBAL _irq00_handler
 GLOBAL _irq01_handler
 GLOBAL _syscall_handler
+GLOBAL _exception0_handler
+GLOBAL _exception6_handler
+GLOBAL _exception13_handler
+GLOBAL _exception14_handler
 
 EXTERN schedule
 EXTERN keyboard_handler
 EXTERN syscall_dispatcher
+EXTERN exception_handler
 
 SECTION .text
 
@@ -117,6 +122,39 @@ _syscall_handler:
     mov [rsp + 14*8], rax
 
     pop_state
+    iretq
+
+; Exception handlers
+_exception0_handler:
+    push_state
+    mov rdi, 0
+    call exception_handler
+    pop_state
+    iretq
+
+_exception6_handler:
+    push_state
+    mov rdi, 6
+    call exception_handler
+    pop_state
+    iretq
+
+_exception13_handler:
+    ; Has error code on stack - remove it
+    push_state
+    mov rdi, 13
+    call exception_handler
+    pop_state
+    add rsp, 8
+    iretq
+
+_exception14_handler:
+    ; Has error code on stack - remove it
+    push_state
+    mov rdi, 14
+    call exception_handler
+    pop_state
+    add rsp, 8
     iretq
 
 ; Force a timer interrupt (triggers context switch)
@@ -264,8 +302,15 @@ SECTION .text
 %endmacro
 
 setup_idt:
+    ; Exceptions
+    idt_entry 0x00, _exception0_handler
+    idt_entry 0x06, _exception6_handler
+    idt_entry 0x0D, _exception13_handler
+    idt_entry 0x0E, _exception14_handler
+    ; IRQs
     idt_entry 0x20, _irq00_handler
     idt_entry 0x21, _irq01_handler
+    ; Syscall
     idt_entry_user 0x80, _syscall_handler
 
     lidt [idt_descriptor]
