@@ -1,5 +1,6 @@
 #include "include/libc.h"
 #include "include/syscalls.h"
+#include "include/tests.h"
 
 #define MAX_CMD_LEN 256
 #define MAX_ARGS 16
@@ -115,6 +116,10 @@ static void cmd_help(void) {
     printf("  cat [&]           - Echo stdin to stdout\n");
     printf("  wc [&]            - Count lines/words/chars\n");
     printf("  filter [&]        - Remove vowels\n");
+    printf("  test_mm <size>    - Memory manager test\n");
+    printf("  test_proc         - Process test\n");
+    printf("  test_sync         - Sync test (semaphores)\n");
+    printf("  test_prio         - Priority scheduler test\n");
     printf("  Supports: cmd1 | cmd2, cmd &, Ctrl+C, Ctrl+D\n");
     printf("\n");
 }
@@ -150,6 +155,10 @@ static CmdFunc get_command_func(const char *name) {
     if (strcmp(name, "cat") == 0) return (CmdFunc)cat_func;
     if (strcmp(name, "wc") == 0) return (CmdFunc)wc_func;
     if (strcmp(name, "filter") == 0) return (CmdFunc)filter_func;
+    if (strcmp(name, "test_mm") == 0) return (CmdFunc)test_mm;
+    if (strcmp(name, "test_proc") == 0) return (CmdFunc)test_proc;
+    if (strcmp(name, "test_sync") == 0) return (CmdFunc)test_sync;
+    if (strcmp(name, "test_prio") == 0) return (CmdFunc)test_prio;
     return NULL;
 }
 
